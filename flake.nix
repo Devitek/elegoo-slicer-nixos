@@ -75,6 +75,35 @@
             touch "$out"
           '';
 
+          # GUI start-up test: run the real app under Xvfb for 30 s with a variable font
+          # installed. It must still be alive at the end. Catches crashes during
+          # GTK / fontconfig / FreeType initialisation that `--help` never reaches
+          # (docs/adr/0006: the bundled FreeType vs fontconfig >= 2.18).
+          gui =
+            pkgs.runCommand "elegoo-slicer-gui"
+              {
+                nativeBuildInputs = [
+                  pkg
+                  pkgs.xvfb-run
+                ];
+              }
+              ''
+                export HOME="$TMPDIR/home" XDG_RUNTIME_DIR="$TMPDIR/run"
+                mkdir -p "$HOME/.config" "$HOME/.cache" "$HOME/.local/share/fonts" "$XDG_RUNTIME_DIR"
+                cp ${pkgs.inter}/share/fonts/truetype/InterVariable.ttf "$HOME/.local/share/fonts/"
+                set +e
+                timeout 30 xvfb-run -a -s '-screen 0 1280x800x24' ${lib.getExe pkg} > gui.log 2>&1
+                rc=$?
+                set -e
+                echo "exit code: $rc (124 = still running after 30 s)"
+                if [ "$rc" -ne 124 ]; then
+                  tail -40 gui.log
+                  tail -20 "$HOME"/.config/ElegooSlicer/log/debug_* 2>/dev/null || true
+                  exit 1
+                fi
+                touch "$out"
+              '';
+
           # Evaluate the NixOS module and assert the package lands in
           # environment.systemPackages (no system build required).
           nixosEval =
@@ -131,6 +160,7 @@
         in
         {
           elegoo-slicer-smoke = smoke;
+          elegoo-slicer-gui = gui;
           nixos-module = nixosEval;
           home-manager-module = hmEval;
         }

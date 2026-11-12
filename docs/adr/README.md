@@ -13,6 +13,7 @@ Format inspired by [MADR](https://adr.github.io/madr/).
 | [0006](0006-fhs-runtime.md) | Run the AppImage in an FHS env with the host libs it expects | Accepted |
 | [0007](0007-dev-environment.md) | Reproducible dev env via flake devShell | Accepted |
 | [0008](0008-renovate-github-actions.md) | Renovate keeps the GitHub Actions up to date | Accepted |
+| [0009](0009-unexport-bundled-freetype.md) | Hide the bundled FreeType exported by the binary | Accepted |
 
 ## Template
 

@@ -72,6 +72,7 @@ template must be adjusted ([ADR-0003](adr/0003-update-mechanism.md)).
 | `nixosModules.default` | `programs.elegoo-slicer` (system) |
 | `homeManagerModules.default` | `programs.elegoo-slicer` (user) |
 | `checks.x86_64-linux.elegoo-slicer-smoke` | `elegoo-slicer --help` in the FHS env, no display |
+| `checks.x86_64-linux.elegoo-slicer-gui` | Real start-up under Xvfb with a variable font, must survive 30 s ([ADR-0009](adr/0009-unexport-bundled-freetype.md)) |
 | `checks.x86_64-linux.nixos-module` / `.home-manager-module` | Module evaluation tests |
 | `devShells.x86_64-linux.default`, `formatter.x86_64-linux` | Tooling, `nix fmt` |
 
