@@ -41,5 +41,9 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           extra_nix_config: |
             experimental-features = nix-command flakes
+      # The smoke test runs the app through bwrap (appimageTools' FHS env), which
+      # needs unprivileged user namespaces; Ubuntu 24.04 restricts them via AppArmor.
+      - name: Allow unprivileged user namespaces (bwrap)
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: nix flake check
         run: nix flake check -L

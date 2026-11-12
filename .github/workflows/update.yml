@@ -56,6 +56,12 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # The smoke test runs the app through bwrap (appimageTools' FHS env), which
+      # needs unprivileged user namespaces; Ubuntu 24.04 restricts them via AppArmor.
+      - name: Allow unprivileged user namespaces (bwrap)
+        if: steps.refresh.outputs.changed == 'true'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       # Authoritative quality gate before the PR is allowed to merge.
       - name: Verify build (nix flake check)
         if: steps.refresh.outputs.changed == 'true'
