@@ -9,6 +9,8 @@
   lib,
   appimageTools,
   librsvg,
+  python3,
+  runCommand,
   source,
 }:
 
@@ -17,6 +19,14 @@ let
   inherit (source) version src;
 
   extracted = appimageTools.extract { inherit pname version src; };
+
+  # The binary exports its statically linked FreeType, which hijacks the system
+  # fontconfig and segfaults on variable fonts. Hide those exports (docs/adr/0009).
+  patched = runCommand "${pname}-${version}-patched" { nativeBuildInputs = [ python3 ]; } ''
+    cp -a ${extracted} "$out"
+    chmod -R u+w "$out"
+    python3 ${./unexport-freetype.py} "$out/bin/elegoo-slicer"
+  '';
 
   # On top of appimageTools' default FHS set (GTK3, GStreamer base, libglvnd, GLU,
   # libsecret, Wayland/X11, Mesa...).
@@ -30,8 +40,9 @@ let
       libmspack
     ];
 in
-appimageTools.wrapType2 {
-  inherit pname version src;
+appimageTools.wrapAppImage {
+  inherit pname version;
+  src = patched;
 
   extraPkgs = runtimePkgs;
 
@@ -54,7 +65,7 @@ appimageTools.wrapType2 {
   '';
 
   passthru = {
-    inherit extracted runtimePkgs;
+    inherit extracted patched runtimePkgs;
   };
 
   meta = {
