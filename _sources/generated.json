@@ -1,0 +1,17 @@
+{
+    "elegoo-slicer": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "elegoo-slicer",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-ezs/CODQ1Ru0cshYZdG+mwwoOFQj2rocsMOyJdAQGvw=",
+            "type": "url",
+            "url": "https://github.com/elegooofficial/ElegooSlicer/releases/download/v1.5.3.5/ElegooSlicer_Linux_V1.5.3.5.AppImage"
+        },
+        "version": "1.5.3.5"
+    }
+}

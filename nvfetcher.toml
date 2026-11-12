@@ -1,0 +1,11 @@
+# Upstream release tracking. nvfetcher writes _sources/generated.{json,nix}
+# (version + SRI hash); never edit those by hand. See docs/adr/0003-update-mechanism.md.
+#
+# Upstream only publishes a Linux x86_64 AppImage. Its file name has varied in the
+# past (`ElegooSlicer_Linux_Ubuntu2404_V…`); if it changes again the fetch fails,
+# the update workflow goes red and nothing is merged, so adjust the template here.
+
+[elegoo-slicer]
+src.github = "elegooofficial/ElegooSlicer"
+src.prefix = "v"
+fetch.url = "https://github.com/elegooofficial/ElegooSlicer/releases/download/v$ver/ElegooSlicer_Linux_V$ver.AppImage"
