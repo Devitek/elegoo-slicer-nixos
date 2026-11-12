@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Lint (statix, deadnix, nixfmt, shellcheck)
+        run: |
+          nix develop .#default --command statix check -i '_sources/**' .
+          nix develop .#default --command deadnix --fail --exclude _sources/generated.nix .
+          git ls-files '*.nix' ':!:_sources/*' \
+            | xargs -r nix develop .#default --command nixfmt --check
+          git ls-files '*.sh' | xargs -r nix develop .#default --command shellcheck
+
+  check:
+    # Upstream only ships an x86_64 AppImage (docs/adr/0002).
+    name: flake check (x86_64-linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      # The smoke test runs the app through bwrap (appimageTools' FHS env), which
+      # needs unprivileged user namespaces; Ubuntu 24.04 restricts them via AppArmor.
+      - name: Allow unprivileged user namespaces (bwrap)
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: nix flake check
+        run: nix flake check -L
