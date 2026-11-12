@@ -51,8 +51,15 @@
         }
       );
 
+      # nixpkgs overlay: adds `pkgs.elegoo-slicer`.
+      overlays.default = import ./nix/overlay.nix;
+
+      # System / per-user integration modules.
+      nixosModules.default = import ./nix/nixos-module.nix;
+      homeManagerModules.default = import ./nix/hm-module.nix;
+
       checks = forAllSystems (
-        { pkgs, ... }:
+        { pkgs, system }:
         let
           pkg = (packagesFor pkgs).elegoo-slicer;
 
@@ -67,9 +74,65 @@
             head -1 help.txt
             touch "$out"
           '';
+
+          # Evaluate the NixOS module and assert the package lands in
+          # environment.systemPackages (no system build required).
+          nixosEval =
+            let
+              sys = lib.nixosSystem {
+                modules = [
+                  ./nix/nixos-module.nix
+                  {
+                    nixpkgs.hostPlatform = system;
+                    programs.elegoo-slicer.enable = true;
+                    boot.loader.grub.enable = false;
+                    fileSystems."/" = {
+                      device = "nodev";
+                      fsType = "tmpfs";
+                    };
+                    system.stateVersion = "24.05";
+                  }
+                ];
+              };
+              ok = builtins.any (p: (p.pname or "") == "elegoo-slicer") sys.config.environment.systemPackages;
+            in
+            pkgs.runCommand "nixos-module-eval" { } (
+              if ok then
+                "echo 'elegoo-slicer present in systemPackages' > \"$out\""
+              else
+                "echo 'elegoo-slicer missing from systemPackages' >&2; exit 1"
+            );
+
+          # Evaluate the Home Manager module in isolation (no home-manager input
+          # needed): stub home.packages and assert the package lands in it.
+          hmEval =
+            let
+              eval = lib.evalModules {
+                specialArgs = { inherit pkgs; };
+                modules = [
+                  ./nix/hm-module.nix
+                  {
+                    options.home.packages = lib.mkOption {
+                      type = lib.types.listOf lib.types.package;
+                      default = [ ];
+                    };
+                  }
+                  { programs.elegoo-slicer.enable = true; }
+                ];
+              };
+              ok = builtins.any (p: (p.pname or "") == "elegoo-slicer") eval.config.home.packages;
+            in
+            pkgs.runCommand "home-manager-module-eval" { } (
+              if ok then
+                "echo 'elegoo-slicer present in home.packages' > \"$out\""
+              else
+                "echo 'elegoo-slicer missing from home.packages' >&2; exit 1"
+            );
         in
         {
           elegoo-slicer-smoke = smoke;
+          nixos-module = nixosEval;
+          home-manager-module = hmEval;
         }
       );
 
