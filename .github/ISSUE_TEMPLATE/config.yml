@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: ElegooSlicer upstream (elegooofficial)
+    url: https://github.com/elegooofficial/ElegooSlicer/issues
+    about: This repository only packages ElegooSlicer for NixOS. Report bugs in the slicer itself upstream.
