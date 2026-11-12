@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/Devitek/elegoo-slicer-nixos/compare/v0.1.0...v0.1.1) (2026-11-12)
+
+
+### Documentation
+
+* Devitek-branded README ([#13](https://github.com/Devitek/elegoo-slicer-nixos/issues/13)) ([4708dd0](https://github.com/Devitek/elegoo-slicer-nixos/commit/4708dd03e9233f5a7ace343a580494def998e9ef)), closes [#12](https://github.com/Devitek/elegoo-slicer-nixos/issues/12)
+
 ## 0.1.0 (2026-11-12)
 
 
