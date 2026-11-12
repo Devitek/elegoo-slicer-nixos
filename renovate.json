@@ -1,0 +1,40 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard"
+  ],
+  "enabledManagers": [
+    "github-actions"
+  ],
+  "commitMessagePrefix": "ci(deps):",
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "packageRules": [
+    {
+      "description": "Group GitHub Actions bumps; auto-merge low-risk ones (CI is the gate). Majors open a PR for review.",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github actions",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "automerge": true,
+      "platformAutomerge": true
+    },
+    {
+      "description": "We pin the Ubuntu runner ourselves (see ADR-0008); Renovate must not bump it.",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepNames": [
+        "ubuntu"
+      ],
+      "enabled": false
+    }
+  ]
+}

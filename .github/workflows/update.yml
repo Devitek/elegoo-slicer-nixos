@@ -1,0 +1,86 @@
+name: update
+
+# Keep the package in sync with upstream releases. Refreshes _sources/ with
+# nvfetcher, verifies the result builds, and lands a PR.
+#
+# Triggered by an external cron through `workflow_dispatch` (reliable). The GitHub
+# schedule below is only a backstop: GitHub delays and drops scheduled runs.
+on:
+  schedule:
+    # Off the top of the hour: runs queued at minute 0 are the most often dropped.
+    - cron: "37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.ELEGOO_BOT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      # Fail loudly if the write token cannot reach the API (expired PAT, or the
+      # org's ">366 days" fine-grained-PAT policy). Otherwise a no-op run looks
+      # green while the PR/release path would 403 on the next real bump.
+      - name: Preflight — write token can reach the API
+        env:
+          GH_TOKEN: ${{ secrets.ELEGOO_BOT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Using ${{ secrets.ELEGOO_BOT_TOKEN && 'ELEGOO_BOT_TOKEN' || 'GITHUB_TOKEN' }}"
+          gh api "repos/${{ github.repository }}" --jq '.full_name' \
+            || { echo "::error::The write token cannot access the GitHub API (expired, or Devitek forbids fine-grained PATs >366 days). See docs/adr/0005."; exit 1; }
+
+      - name: Refresh sources via nvfetcher
+        id: refresh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          nix develop .#default --command bash scripts/update.sh | tee bumps.md
+          if git diff --quiet -- _sources nvfetcher.toml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Authoritative quality gate before the PR is allowed to merge.
+      - name: Verify build (nix flake check)
+        if: steps.refresh.outputs.changed == 'true'
+        run: nix flake check -L
+
+      - name: Open and merge PR
+        if: steps.refresh.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.ELEGOO_BOT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          version="$(jq -r '."elegoo-slicer".version' _sources/generated.json)"
+          branch="automation/update-$(date -u +%Y%m%dT%H%M%SZ)"
+          git switch -c "$branch"
+          git add _sources nvfetcher.toml
+
+          title="chore(deps): update ElegooSlicer to ${version}"
+          body="$(cat bumps.md)"
+          rm -f bumps.md
+          git commit -m "$title" -m "$body"
+          git push origin "$branch"
+
+          pr="$(gh pr create --base main --head "$branch" --title "$title" --body "$body")"
+          # Merge now if mergeable; enable auto-merge otherwise.
+          gh pr merge "$pr" --squash --delete-branch --auto \
+            || gh pr merge "$pr" --squash --delete-branch
