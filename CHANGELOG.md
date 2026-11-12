@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/Devitek/elegoo-slicer-nixos/compare/v0.1.1...v0.1.2) (2026-11-12)
+
+
+### Bug Fixes
+
+* hide the bundled FreeType so the app no longer segfaults on start-up ([#16](https://github.com/Devitek/elegoo-slicer-nixos/issues/16)) ([25ba824](https://github.com/Devitek/elegoo-slicer-nixos/commit/25ba82455e250db211e0dc4147f2f9981c732112)), closes [#15](https://github.com/Devitek/elegoo-slicer-nixos/issues/15)
+
 ## [0.1.1](https://github.com/Devitek/elegoo-slicer-nixos/compare/v0.1.0...v0.1.1) (2026-11-12)
 
 
